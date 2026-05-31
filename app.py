@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import html
+
 import pandas as pd
 import streamlit as st
 
@@ -47,6 +49,64 @@ st.markdown(
         border-radius: 16px;
         background: #ffffff;
         box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05);
+        color: #0f172a;
+        line-height: 1.5;
+    }
+    .result-card {
+        padding: 1rem 1.1rem;
+        border-radius: 18px;
+        border: 1px solid #dbe4f0;
+        background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+        box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+        color: #0f172a;
+        line-height: 1.55;
+        min-height: 112px;
+    }
+    .result-card p {
+        margin: 0.35rem 0 0;
+        color: #334155;
+    }
+    .result-card strong {
+        color: #0f172a;
+    }
+    .result-title {
+        font-size: 1.04rem;
+        font-weight: 700;
+        color: #0f172a;
+        margin-bottom: 0.1rem;
+    }
+    .result-pill {
+        display: inline-block;
+        padding: 0.22rem 0.7rem;
+        border-radius: 999px;
+        font-size: 0.8rem;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+        margin-bottom: 0.55rem;
+    }
+    .pill-positive {
+        background: rgba(22, 163, 74, 0.12);
+        color: #15803d;
+    }
+    .pill-negative {
+        background: rgba(220, 38, 38, 0.12);
+        color: #b91c1c;
+    }
+    .pill-neutral {
+        background: rgba(245, 158, 11, 0.14);
+        color: #b45309;
+    }
+    .result-positive {
+        border-left: 6px solid #16a34a;
+    }
+    .result-negative {
+        border-left: 6px solid #dc2626;
+    }
+    .result-neutral {
+        border-left: 6px solid #f59e0b;
+    }
+    .result-empty {
+        border-left: 6px solid #64748b;
     }
     .small-copy {
         color: #475569;
@@ -105,7 +165,9 @@ with st.sidebar:
     st.write("Stratified holdout validation for reporting")
     st.divider()
     st.subheader("Quick note")
-    st.info("Try the sample buttons first if you want a fast demo. The model handles obvious positive and negative reviews well, but mixed or sarcastic text can still be tricky.")
+    st.info(
+        "Try the sample buttons first if you want a fast demo. The model handles obvious positive and negative reviews well, but mixed or sarcastic text can still be tricky."
+    )
 
 tab1, tab2 = st.tabs(["🔮 Live Predictor", "🧠 Model Overview"])
 
@@ -118,6 +180,44 @@ if "analysis_result" not in st.session_state:
 
 def clear_analysis() -> None:
     st.session_state.analysis_result = None
+
+
+def render_result_card(prediction: str) -> None:
+    tone_map = {
+        "Positive": (
+            "result-positive",
+            "pill-positive",
+            "Positive sentiment",
+            "The customer sounds happy and satisfied.",
+        ),
+        "Negative": (
+            "result-negative",
+            "pill-negative",
+            "Negative sentiment",
+            "The customer sounds unhappy or disappointed.",
+        ),
+        "Neutral": (
+            "result-neutral",
+            "pill-neutral",
+            "Neutral or mixed sentiment",
+            "The model sees an ambiguous or mixed tone.",
+        ),
+    }
+    result_class, pill_class, title_text, description = tone_map.get(
+        prediction,
+        ("result-neutral", "pill-neutral", "Predicted sentiment", "The model returned a sentiment label."),
+    )
+
+    st.markdown(
+        f"""
+        <div class="result-card {html.escape(result_class)}">
+            <span class="result-pill {html.escape(pill_class)}">{html.escape(prediction)}</span>
+            <div class="result-title">{html.escape(title_text)}</div>
+            <p>{html.escape(description)}</p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
 
 sample_reviews = {
@@ -171,9 +271,9 @@ with tab1:
         if result is None:
             st.markdown(
                 """
-                <div class="soft-card">
-                    <strong>No prediction yet.</strong><br/>
-                    Type a review on the left and press <em>Analyze Sentiment</em> to see the result and confidence breakdown.
+                <div class="result-card result-empty">
+                    <div class="result-title">No prediction yet.</div>
+                    <p>Type a review on the left and press <strong>Analyze Sentiment</strong> to see the result and confidence breakdown.</p>
                 </div>
                 """,
                 unsafe_allow_html=True,
@@ -183,12 +283,7 @@ with tab1:
             probabilities = result["probabilities"]
             cleaned_review = result["cleaned_review"]
 
-            if prediction == "Positive":
-                st.success(f"🟢 **{prediction}** — the customer is happy.")
-            elif prediction == "Negative":
-                st.error(f"🔴 **{prediction}** — the customer is unhappy.")
-            else:
-                st.warning(f"🟡 **{prediction}** — the model sees a mixed or neutral tone.")
+            render_result_card(prediction)
 
             probability_frame = pd.DataFrame(
                 {
