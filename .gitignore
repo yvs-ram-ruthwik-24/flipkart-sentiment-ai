@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.streamlit/secrets.toml
+Capstone_Project_Submission_Guidelines_April_2026.pdf
+Data Science Capstone Project 6.pdf
